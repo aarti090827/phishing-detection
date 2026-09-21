@@ -4,13 +4,16 @@ from urllib.parse import urlparse
 import joblib
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
+import streamlit as st
+
+# Streamlit Page Setup
+st.set_page_config(page_title="Phishing Detection", page_icon="🛡️")
 
 # 1. Check if model exists, else create a temporary one automatically
 model_path = "MODEL/phishing_model.pkl"
 
 if not os.path.exists(model_path):
     os.makedirs("MODEL", exist_ok=True)
-    # Temporary sample training data
     X_train = np.array(
         [
             [18, 10, 0, 1, 0, 0, 0, 0, 2, 1, 0, 14, 0, 0, 0, 0],
@@ -24,7 +27,6 @@ if not os.path.exists(model_path):
     temp_model = RandomForestClassifier(n_estimators=10, random_state=42)
     temp_model.fit(X_train, y_train)
     joblib.dump(temp_model, model_path)
-    print("⚠️ 'phishing_model.pkl' nahi mila, isliye temporary model generate kar diya gaya hai.")
 
 # Load Trained Model
 model = joblib.load(model_path)
@@ -124,28 +126,26 @@ def suspicious_url(url):
     return False
 
 
-# 4. Main Code Execution
-def main():
-    url = input("Enter URL: ")
+# 4. Streamlit UI Interface
+st.title("Phishing Website Detector")
 
-    try:
-        if suspicious_url(url):
-            result = "⚠️ Phishing Website"
-        else:
-            features = extract_features(url)
-            prediction = model.predict([features])[0]
+url = st.text_input("Enter URL:")
 
-            if prediction == 1:
-                result = "⚠️ Phishing Website"
+if st.button("Check URL"):
+    if url:
+        try:
+            if suspicious_url(url):
+                st.error("⚠️ Phishing Website")
             else:
-                result = "✅ Safe Website"
+                features = extract_features(url)
+                prediction = model.predict([features])[0]
 
-    except Exception as e:
-        result = "Error: " + str(e)
+                if prediction == 1:
+                    st.error("⚠️ Phishing Website")
+                else:
+                    st.success("✅ Safe Website")
 
-    print("Result:", result)
-
-
-if __name__ == "__main__":
-    main()
-  
+        except Exception as e:
+            st.error("Error: " + str(e))
+    else:
+        st.warning("Please enter a URL first.")
